@@ -41,12 +41,10 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Set optimal initial zoom
+  const zoomedRef = useRef(false);
+
   useEffect(() => {
-    if (graphRef.current) {
-      // 180 is closer than the original 250, but not too close
-      graphRef.current.cameraPosition({ z: 180 }, null, 2000);
-    }
+    zoomedRef.current = false;
   }, [network]);
   
   // Custom Node Object for aggressive glowing and text labels
@@ -135,6 +133,12 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         linkDirectionalParticleWidth={2}
         linkDirectionalParticleColor={() => '#60a5fa'}
         onNodeClick={onNodeClick}
+        onEngineStop={() => {
+          if (graphRef.current && !zoomedRef.current) {
+            graphRef.current.zoomToFit(1500, 60);
+            zoomedRef.current = true;
+          }
+        }}
         backgroundColor="#050505" // Deep cyber space
         showNavInfo={false}
       />
