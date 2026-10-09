@@ -8,7 +8,11 @@ Public interface (for Member 3):
          "intervened_nodes": List[str],
          "total_reach": int,
          "ticks": [
-             {"step": int, "newly_infected": List[str], "cumulative_infected": int},
+             {
+                 "step": int,
+                 "newly_infected": List[str],
+                 "cumulative_infected": int
+             },
              ...
          ]
        }
@@ -82,7 +86,11 @@ def run_simulation(
             "strategy": strategy,
             "intervened_nodes": sorted(intervened_set),
             "total_reach": 0,
-            "ticks": [{"step": 0, "newly_infected": [], "cumulative_infected": 0}],
+            "ticks": [{
+                "step": 0,
+                "newly_infected": [],
+                "cumulative_infected": 0
+            }],
         }
 
     # ------------------------------------------------------------------

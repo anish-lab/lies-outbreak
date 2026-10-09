@@ -39,8 +39,8 @@ class GraphResponse(BaseModel):
 
 class SimRequest(BaseModel):
     """Payload accepted by POST /api/simulate."""
-    start_node: str = Field(..., min_length=1, description="Origin account where the rumour begins")
-    budget: int = Field(..., ge=0, description="Intervention budget (accounts fact-checked/blocked)")
+    start_node: str = Field(..., min_length=1, description="Origin account where the rumour begins", examples=["0"])
+    budget: int = Field(..., ge=0, description="Intervention budget (accounts fact-checked/blocked)", examples=[3])
 
     model_config = ConfigDict(extra="ignore")
 
