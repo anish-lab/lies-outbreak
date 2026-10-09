@@ -36,7 +36,7 @@ function App() {
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
-    fetchNetwork()
+    fetchNetwork('snap')
       .then(data => {
         setNetwork({
           nodes: data?.nodes || [],
@@ -69,7 +69,7 @@ function App() {
     resetColors(network.nodes);
 
     try {
-      const data = await runSimulation(sourceNode, budget);
+      const data = await runSimulation(sourceNode, budget, 'snap');
       setSimData(data);
 
       const maxNone = data?.none?.ticks?.length || 0;
