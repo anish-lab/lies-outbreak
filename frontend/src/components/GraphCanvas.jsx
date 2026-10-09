@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
+import SpriteText from 'three-spritetext';
 
 const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
   const containerRef = useRef(null);
@@ -39,8 +40,16 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
+
+  // Zoom in on load
+  useEffect(() => {
+    if (graphRef.current) {
+      // Set camera distance closer
+      graphRef.current.cameraPosition({ z: 250 }, null, 2000);
+    }
+  }, [network]);
   
-  // Custom Node Object for aggressive glowing
+  // Custom Node Object for aggressive glowing and text labels
   const nodeThreeObject = useCallback((node) => {
     const colorStr = colors[node.id] || '#3b82f6';
     const isSelected = selectedNodeId === node.id;
@@ -60,6 +69,14 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     });
     const sphere = new THREE.Mesh(geometry, material);
     group.add(sphere);
+
+    // Node label (number)
+    const sprite = new SpriteText(node.id);
+    sprite.color = '#ffffff';
+    sprite.textHeight = 4;
+    sprite.position.y = 8;
+    if (isDimmed) sprite.material.opacity = 0.2;
+    group.add(sprite);
 
     // Aggressive Glow (Halo) for infected (red) or intervened (green) or selected
     if (!isDimmed && (colorStr === '#ef4444' || colorStr === '#22c55e' || isSelected)) {
@@ -92,16 +109,16 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         nodeId="id"
         nodeThreeObject={nodeThreeObject}
         linkColor={link => {
-          if (!selectedNodeId) return 'rgba(51, 65, 85, 0.4)'; // default dim gray
+          if (!selectedNodeId) return 'rgba(148, 163, 184, 0.6)'; // bright enough to see
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           if (sourceId === selectedNodeId || targetId === selectedNodeId) {
-            return 'rgba(96, 165, 250, 0.8)'; // highlight connected edges
+            return 'rgba(96, 165, 250, 0.9)'; // highlight connected edges
           }
-          return 'rgba(30, 41, 59, 0.1)'; // dim other edges
+          return 'rgba(30, 41, 59, 0.2)'; // dim other edges
         }}
         linkWidth={link => {
-          if (!selectedNodeId) return 0.5;
+          if (!selectedNodeId) return 0.8;
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           if (sourceId === selectedNodeId || targetId === selectedNodeId) return 1.5;

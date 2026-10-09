@@ -17,7 +17,8 @@
     "react-dom": "^18.2.0",
     "react-force-graph-2d": "^1.25.0",
     "react-force-graph-3d": "^1.29.2",
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "three-spritetext": "^1.10.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

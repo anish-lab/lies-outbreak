@@ -147,7 +147,7 @@ function App() {
               <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tighter">
                 NEXUS<span className="font-light opacity-50">OVERSEER</span>
               </h1>
-              <p className="text-[10px] text-blue-400/70 mt-1 uppercase tracking-[0.3em] font-mono">Threat Propagation Simulator v2.0</p>
+              <p className="text-[10px] text-blue-400/70 mt-1 uppercase tracking-[0.3em] font-mono">MISINFORMATION PROPAGATION SIMULATOR</p>
             </div>
           </div>
           
