@@ -145,7 +145,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tighter">
-                NEXUS<span className="font-light opacity-50">OVERSEER</span>
+                OUTBREAK<span className="font-light opacity-50"> OF LIES</span>
               </h1>
               <p className="text-[10px] text-blue-400/70 mt-1 uppercase tracking-[0.3em] font-mono">MISINFORMATION PROPAGATION SIMULATOR</p>
             </div>
@@ -306,7 +306,7 @@ function App() {
               <div className="flex-1 relative rounded-2xl overflow-hidden border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)]">
                 <div className="absolute top-6 right-6 z-10 bg-black/80 px-5 py-3 rounded-xl border border-green-500/30 backdrop-blur-xl text-right">
                   <h2 className="font-black text-green-400 tracking-wide uppercase text-sm">Protected Network</h2>
-                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Nexus Optimization Active</p>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Optimization Active</p>
                 </div>
                 <GraphCanvas network={network} colors={optimizedColors} />
               </div>
