@@ -47,27 +47,21 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     zoomedRef.current = false;
   }, [network]);
   
-  const hasOutbreak = useMemo(() => Object.values(colors).includes('#ef4444'), [colors]);
-
   // Custom Node Object for aggressive glowing and text labels
   const nodeThreeObject = useCallback((node) => {
     const colorStr = colors[node.id] || '#3b82f6';
     const isSelected = selectedNodeId === node.id;
     const isNeighbor = selectedNodeId && neighborMap[selectedNodeId]?.has(node.id);
-    const isSafe = colorStr === '#3b82f6';
-    
-    // Dim if another node is selected, OR if there's an active outbreak and this node is safe
-    const isDimmed = (selectedNodeId && !isSelected && !isNeighbor) || (!selectedNodeId && hasOutbreak && isSafe);
+    const isDimmed = selectedNodeId && !isSelected && !isNeighbor;
     
     const group = new THREE.Group();
 
-    // Core sphere (shrink safe nodes during outbreak so they don't block view)
-    const size = isSelected ? 7 : (isDimmed && isSafe && hasOutbreak ? 1.5 : 4);
-    const geometry = new THREE.SphereGeometry(size, 16, 16);
+    // Core sphere
+    const geometry = new THREE.SphereGeometry(isSelected ? 7 : 4, 16, 16);
     const material = new THREE.MeshPhongMaterial({
       color: colorStr,
       transparent: true,
-      opacity: isDimmed ? (hasOutbreak && isSafe ? 0.05 : 0.15) : 1,
+      opacity: isDimmed ? 0.15 : 1,
       emissive: colorStr,
       emissiveIntensity: isDimmed ? 0 : 0.8
     });
@@ -77,13 +71,13 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     // Node label (number)
     const sprite = new SpriteText(node.id);
     sprite.color = '#ffffff';
-    sprite.textHeight = isSelected ? 6 : (isDimmed && isSafe && hasOutbreak ? 2 : 4);
+    sprite.textHeight = 4;
     sprite.position.y = 10; 
     sprite.backgroundColor = 'rgba(0,0,0,0.6)'; 
     sprite.padding = 1; 
     sprite.borderRadius = 2; 
     sprite.material.depthTest = false;
-    if (isDimmed) sprite.material.opacity = hasOutbreak && isSafe ? 0.05 : 0.2;
+    if (isDimmed) sprite.material.opacity = 0.2;
     group.add(sprite);
 
     // Aggressive Glow (Halo) for infected (red) or intervened (green) or selected
@@ -105,11 +99,11 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     }
 
     return group;
-  }, [colors, selectedNodeId, neighborMap, hasOutbreak]);
+  }, [colors, selectedNodeId, neighborMap]);
 
   const handleNodeClick = useCallback((node) => {
     // Aim at node from outside it
-    const distance = 60;
+    const distance = 80;
     const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
 
     if (graphRef.current) {
@@ -162,14 +156,14 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
       const centerY = (minY + maxY) / 2;
       const centerZ = (minZ + maxZ) / 2;
       
-      // Fly extremely close to the outbreak cluster to see the changes perfectly
-      const maxSpread = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 20); 
-      const distance = Math.max(maxSpread * 1.1, 50);
+      // Calculate max spread to determine zoom distance 
+      const maxSpread = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 60); 
+      const distance = Math.min(maxSpread * 2, 400); // Back off a bit so we can actually see the context!
       
       graphRef.current.cameraPosition(
         { x: centerX, y: centerY, z: centerZ + distance }, 
         { x: centerX, y: centerY, z: centerZ }, 
-        800 // smooth transition tracking
+        1000 // smooth transition tracking
       );
     }
   }, [colors, network]);
@@ -184,7 +178,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         nodeId="id"
         nodeThreeObject={nodeThreeObject}
         linkColor={link => {
-          if (!selectedNodeId) return hasOutbreak ? 'rgba(30, 41, 59, 0.05)' : 'rgba(148, 163, 184, 0.6)';
+          if (!selectedNodeId) return 'rgba(148, 163, 184, 0.6)'; // normal bright edges
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           if (sourceId === selectedNodeId || targetId === selectedNodeId) {
