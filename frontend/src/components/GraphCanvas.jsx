@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
-const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
+const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode = false }) => {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const graphRef = useRef();
@@ -83,7 +83,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     // Draw text label only if zoomed in enough OR if selected/infected
     const showText = globalScale > 1.2 || isSelected || isSpecial;
     
-    if (showText && !isDimmed) {
+    if (showText && !isDimmed && !staticMode) {
       const label = String(node.id);
       const fontSize = isSelected ? 14/globalScale : 10/globalScale;
       ctx.font = `bold ${fontSize}px Consolas, monospace`;
@@ -103,9 +103,10 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     }
     
     ctx.globalAlpha = 1; // Reset
-  }, [colors, selectedNodeId, neighborMap]);
+  }, [colors, selectedNodeId, neighborMap, staticMode]);
 
   const handleNodeClick = useCallback((node) => {
+    if (staticMode) return;
     if (graphRef.current) {
       graphRef.current.centerAt(node.x, node.y, 1000);
       graphRef.current.zoom(4, 1000); // zoom in tight on 2D
@@ -113,11 +114,11 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     if (onNodeClick) {
       onNodeClick(node);
     }
-  }, [onNodeClick]);
+  }, [onNodeClick, staticMode]);
 
   // Cinematic Auto-Tracking in 2D
   useEffect(() => {
-    if (!graphRef.current || !network?.nodes) return;
+    if (staticMode || !graphRef.current || !network?.nodes) return;
     
     const infectedIds = new Set(
       Object.entries(colors).filter(([id, color]) => color === '#ef4444').map(([id]) => id)
@@ -149,7 +150,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
       graphRef.current.centerAt(centerX, centerY, 800);
       graphRef.current.zoom(optimalZoom, 800);
     }
-  }, [colors, network]);
+  }, [colors, network, staticMode]);
 
   // Initial fit
   useEffect(() => {
@@ -190,6 +191,21 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         linkDirectionalParticles={link => {
           if (!selectedNodeId) return 0;
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          if (sourceId === selectedNodeId || targetId === selectedNodeId) return 2;
+          return 0;
+        }}
+        linkDirectionalParticleWidth={3}
+        linkDirectionalParticleColor={() => '#60a5fa'}
+        onNodeClick={handleNodeClick}
+        backgroundColor="#050505"
+        d3VelocityDecay={staticMode ? 1 : 0.3} // Static mode freezes physics immediately
+        cooldownTicks={staticMode ? 0 : Infinity} // Stop engine if static
+        enableNodeDrag={!staticMode}
+        enableZoomInteraction={!staticMode}
+        enablePanInteraction={!staticMode}
+      />
+
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           if (sourceId === selectedNodeId || targetId === selectedNodeId) return 2;
           return 0;

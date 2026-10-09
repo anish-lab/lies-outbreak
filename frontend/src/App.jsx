@@ -303,7 +303,7 @@ function App() {
                    </div>
                  </div>
                </div>
-               <GraphCanvas network={network} colors={noneColors} />
+               <GraphCanvas network={network} colors={noneColors} staticMode={true} />
                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none opacity-40"></div>
             </div>
           </>
@@ -376,7 +376,7 @@ function App() {
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">No Intervention</p>
                   <p className="text-[10px] text-red-400/70 mt-1 font-mono">reach: {simData?.none?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={noneColors} />
+                <GraphCanvas network={network} colors={noneColors} staticMode={true} />
               </div>
 
               {/* Panel 2: Degree Baseline */}
@@ -386,7 +386,7 @@ function App() {
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Top-k Degree Heuristic</p>
                   <p className="text-[10px] text-amber-400/70 mt-1 font-mono">reach: {simData?.degree?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={degreeColors} />
+                <GraphCanvas network={network} colors={degreeColors} staticMode={true} />
               </div>
 
               {/* Panel 3: Knapsack Optimized */}
@@ -396,7 +396,7 @@ function App() {
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Greedy Betweenness ROI</p>
                   <p className="text-[10px] text-green-400/70 mt-1 font-mono">reach: {simData?.optimized?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={optimizedColors} />
+                <GraphCanvas network={network} colors={optimizedColors} staticMode={true} />
               </div>
             </div>
 
