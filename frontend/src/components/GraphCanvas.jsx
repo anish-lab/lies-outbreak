@@ -1,27 +1,26 @@
-import React, { useRef, useEffect, useState } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import ForceGraph3D from 'react-force-graph-3d';
+import * as THREE from 'three';
 
 const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const graphRef = useRef();
-  
-  // Pre-calculate neighbor map for fast lookup
-  const [neighborMap, setNeighborMap] = useState({});
 
-  useEffect(() => {
+  // Pre-calculate neighbor map for fast lookup
+  const neighborMap = useMemo(() => {
+    const map = {};
     if (network?.links) {
-      const map = {};
       network.links.forEach(link => {
-        const sourceId = link.source.id || link.source;
-        const targetId = link.target.id || link.target;
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
         if (!map[sourceId]) map[sourceId] = new Set();
         if (!map[targetId]) map[targetId] = new Set();
         map[sourceId].add(targetId);
         map[targetId].add(sourceId);
       });
-      setNeighborMap(map);
     }
+    return map;
   }, [network]);
 
   useEffect(() => {
@@ -41,104 +40,101 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
   
-  useEffect(() => {
-    if (graphRef.current && network?.nodes?.length > 0) {
-      graphRef.current.d3Force('charge').strength(-150);
-      graphRef.current.d3Force('link').distance(40);
-      graphRef.current.d3ReheatSimulation();
+  // Custom Node Object for aggressive glowing
+  const nodeThreeObject = useCallback((node) => {
+    const colorStr = colors[node.id] || '#3b82f6';
+    const isSelected = selectedNodeId === node.id;
+    const isNeighbor = selectedNodeId && neighborMap[selectedNodeId]?.has(node.id);
+    const isDimmed = selectedNodeId && !isSelected && !isNeighbor;
+    
+    const group = new THREE.Group();
+
+    // Core sphere
+    const geometry = new THREE.SphereGeometry(isSelected ? 7 : 4, 16, 16);
+    const material = new THREE.MeshPhongMaterial({
+      color: colorStr,
+      transparent: true,
+      opacity: isDimmed ? 0.15 : 1,
+      emissive: colorStr,
+      emissiveIntensity: isDimmed ? 0 : 0.8
+    });
+    const sphere = new THREE.Mesh(geometry, material);
+    group.add(sphere);
+
+    // Aggressive Glow (Halo) for infected (red) or intervened (green) or selected
+    if (!isDimmed && (colorStr === '#ef4444' || colorStr === '#22c55e' || isSelected)) {
+      const haloGeometry = new THREE.SphereGeometry(isSelected ? 14 : 9, 16, 16);
+      const haloMaterial = new THREE.MeshBasicMaterial({
+        color: colorStr,
+        transparent: true,
+        opacity: isSelected ? 0.3 : 0.2,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+      group.add(halo);
+
+      // Add a PointLight for extra aggressive glow
+      const light = new THREE.PointLight(colorStr, 2, 50);
+      group.add(light);
     }
-  }, [network]);
+
+    return group;
+  }, [colors, selectedNodeId, neighborMap]);
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-gray-950">
-      <ForceGraph2D
+    <div ref={containerRef} className="w-full h-full bg-[#050505] relative rounded-lg overflow-hidden border border-gray-800/60 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]">
+      <ForceGraph3D
         ref={graphRef}
         width={dimensions.width}
         height={dimensions.height}
         graphData={network}
         nodeId="id"
-        nodeColor={node => colors[node.id] || '#3b82f6'}
-        nodeRelSize={6}
+        nodeThreeObject={nodeThreeObject}
         linkColor={link => {
-          if (!selectedNodeId) return '#334155';
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
+          if (!selectedNodeId) return 'rgba(51, 65, 85, 0.4)'; // default dim gray
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           if (sourceId === selectedNodeId || targetId === selectedNodeId) {
-            return '#60a5fa'; // highlight connected edges
+            return 'rgba(96, 165, 250, 0.8)'; // highlight connected edges
           }
-          return '#1e293b'; // dim other edges
+          return 'rgba(30, 41, 59, 0.1)'; // dim other edges
         }}
         linkWidth={link => {
-          if (!selectedNodeId) return 1.5;
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
-          if (sourceId === selectedNodeId || targetId === selectedNodeId) return 2.5;
-          return 0.5;
+          if (!selectedNodeId) return 0.5;
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          if (sourceId === selectedNodeId || targetId === selectedNodeId) return 1.5;
+          return 0.2;
         }}
-        nodeCanvasObject={(node, ctx, globalScale) => {
-          if (node.x === undefined || node.y === undefined) return;
-
-          const label = node.id;
-          const fontSize = 12/globalScale;
-          const color = colors[node.id] || '#3b82f6';
-          
-          let opacity = 1;
-          const isSelected = selectedNodeId === node.id;
-          const isNeighbor = selectedNodeId && neighborMap[selectedNodeId]?.has(node.id);
-          
-          if (selectedNodeId && !isSelected && !isNeighbor) {
-            opacity = 0.2; // Dim non-neighbors
-          }
-
-          ctx.globalAlpha = opacity;
-          
-          // Outer glow for selected or intervened
-          if (color === '#22c55e' || isSelected) {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, 6 + 2, 0, 2 * Math.PI, false);
-            ctx.fillStyle = isSelected ? 'rgba(96, 165, 250, 0.4)' : 'rgba(34, 197, 94, 0.3)';
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = isSelected ? '#60a5fa' : '#22c55e';
-            ctx.stroke();
-          }
-
-          // Draw node
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI, false);
-          ctx.fillStyle = color;
-          ctx.fill();
-
-          // Draw label
-          if (globalScale > 1.5 || isSelected) {
-            ctx.font = `${fontSize}px Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = isSelected ? '#ffffff' : '#d1d5db';
-            ctx.fillText(label, node.x, node.y);
-          }
-          
-          ctx.globalAlpha = 1; // reset
+        linkDirectionalParticles={link => {
+          // Send particles over connections that are highlighted
+          if (!selectedNodeId) return 0;
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          if (sourceId === selectedNodeId || targetId === selectedNodeId) return 2;
+          return 0;
         }}
+        linkDirectionalParticleWidth={2}
+        linkDirectionalParticleColor={() => '#60a5fa'}
         onNodeClick={onNodeClick}
-        enableNodeDrag={true}
-        enableZoomPanInteraction={true}
-        cooldownTicks={100}
+        backgroundColor="#050505" // Deep cyber space
+        showNavInfo={false}
       />
       
-      {/* Legend */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/90 border border-gray-800 rounded-full px-6 py-3 flex gap-6 shadow-2xl backdrop-blur-md z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-          <span className="text-xs font-medium text-gray-300">Safe</span>
+      {/* Premium Cyber Legend */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_#3b82f6]"></div>
+          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Safe</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
-          <span className="text-xs font-medium text-gray-300">Infected</span>
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_15px_#ef4444]"></div>
+          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Infected</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] border border-green-400"></div>
-          <span className="text-xs font-medium text-gray-300">Intervened</span>
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e] border border-green-400"></div>
+          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Intervened</span>
         </div>
       </div>
     </div>
