@@ -85,7 +85,7 @@ function App() {
     return () => clearInterval(intervalId);
   }, [isPlaying, step, currentTick, simData]);
 
-  const applyTickState = (targetTick) => {
+  useEffect(() => { applyTickState(currentTick); }, [currentTick, simData, network]); const applyTickState = (targetTick) => {
     if (!simData) return;
     
     const bColors = {};
@@ -102,7 +102,7 @@ function App() {
     let bInfected = 0;
     let oInfected = 0;
     
-    for (let i = 0; i < targetTick; i++) {
+    for (let i = 0; i <= targetTick; i++) {
       if (i < (simData.baseline?.ticks?.length || 0)) {
         const tick = simData.baseline.ticks[i];
         (tick?.newly_infected || []).forEach(id => {
