@@ -97,6 +97,25 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     return group;
   }, [colors, selectedNodeId, neighborMap]);
 
+  const handleNodeClick = useCallback((node) => {
+    // Aim at node from outside it
+    const distance = 80;
+    const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+
+    if (graphRef.current) {
+      graphRef.current.cameraPosition(
+        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+        node, // lookAt ({ x, y, z })
+        1500  // ms transition duration
+      );
+    }
+    
+    // Call the parent's onNodeClick to update the sidebar state
+    if (onNodeClick) {
+      onNodeClick(node);
+    }
+  }, [onNodeClick]);
+
   return (
     <div ref={containerRef} className="w-full h-full bg-[#050505] relative rounded-lg overflow-hidden border border-gray-800/60 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]">
       <ForceGraph3D
@@ -132,7 +151,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         }}
         linkDirectionalParticleWidth={2}
         linkDirectionalParticleColor={() => '#60a5fa'}
-        onNodeClick={onNodeClick}
+        onNodeClick={handleNodeClick}
         onEngineStop={() => {
           if (graphRef.current && !zoomedRef.current) {
             graphRef.current.zoomToFit(1500, 60);
