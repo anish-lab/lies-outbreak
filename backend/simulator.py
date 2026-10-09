@@ -69,9 +69,9 @@ def run_simulation(
 
     if budget > 0 and strategy not in ("none",):
         if strategy == "degree":
-            intervened_set = set(degree_intervention(G, budget))
+            intervened_set = set(degree_intervention(G, budget, start_node=str(start_node)))
         elif strategy == "knapsack":
-            intervened_set = set(knapsack_intervention(G, budget))
+            intervened_set = set(knapsack_intervention(G, budget, start_node=str(start_node)))
 
     # Normalise start_node to str for uniform comparisons
     start_str = str(start_node)

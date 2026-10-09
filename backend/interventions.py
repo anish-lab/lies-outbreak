@@ -21,7 +21,7 @@ import networkx as nx
 # Baseline: top-k by degree
 # ---------------------------------------------------------------------------
 
-def degree_intervention(G: nx.Graph, budget: int) -> List[str]:
+def degree_intervention(G: nx.Graph, budget: int, start_node: str = None) -> List[str]:
     """Block the *budget* nodes with the highest degree.
 
     This is the simplest possible heuristic: highly connected nodes are
@@ -32,13 +32,21 @@ def degree_intervention(G: nx.Graph, budget: int) -> List[str]:
     G : nx.Graph
     budget : int
         Maximum number of nodes to block.
+    start_node : str, optional
+        The rumour origin node — excluded from candidates because it has
+        already spread the rumour before any intervention can act.
 
     Returns
     -------
     List[str]
         Node identifiers (as strings) of the selected nodes.
     """
-    sorted_nodes = sorted(G.nodes(), key=lambda n: G.degree(n), reverse=True)
+    start_str = str(start_node) if start_node is not None else None
+    sorted_nodes = sorted(
+        (n for n in G.nodes() if str(n) != start_str),
+        key=lambda n: G.degree(n),
+        reverse=True,
+    )
     return [str(n) for n in sorted_nodes[:budget]]
 
 
@@ -46,7 +54,7 @@ def degree_intervention(G: nx.Graph, budget: int) -> List[str]:
 # Advanced: iterative greedy knapsack
 # ---------------------------------------------------------------------------
 
-def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
+def knapsack_intervention(G: nx.Graph, budget: int, start_node: str = None) -> List[str]:
     """Iterative greedy knapsack — picks the highest-ROI node each round,
     then **re-computes centralities** on the reduced graph before the next
     pick.  This accounts for the fact that removing one hub changes the
@@ -62,6 +70,9 @@ def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
     G : nx.Graph
     budget : int
         Maximum number of nodes to block.
+    start_node : str, optional
+        The rumour origin node — excluded from candidates because it has
+        already spread the rumour before any intervention can act.
 
     Returns
     -------
@@ -69,7 +80,12 @@ def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
         Node identifiers (as strings) of the selected nodes, in the order
         they were chosen.
     """
+    start_str = str(start_node) if start_node is not None else None
     working_G: nx.Graph = G.copy()
+    # Remove start_node from working graph so it is never selected
+    if start_str is not None and start_str in working_G:
+        working_G.remove_node(start_str)
+
     selected: List[str] = []
 
     for _ in range(budget):
