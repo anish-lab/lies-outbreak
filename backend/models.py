@@ -41,6 +41,7 @@ class SimRequest(BaseModel):
     """Payload accepted by POST /api/simulate."""
     start_node: str = Field(..., min_length=1, description="Origin account where the rumour begins")
     budget: int = Field(..., ge=0, description="Intervention budget (accounts fact-checked/blocked)")
+    dataset: str = Field(default="synthetic", description="Dataset to simulate on: 'snap' or 'synthetic'")
 
     model_config = ConfigDict(extra="ignore")
 
@@ -64,8 +65,9 @@ class SimResult(BaseModel):
 
 
 class SimResponse(BaseModel):
-    """Payload returned by POST /api/simulate comparing baseline vs optimized."""
-    baseline: SimResult = Field(..., description="Simulation outcome under baseline intervention")
+    """Payload returned by POST /api/simulate comparing none, degree, and knapsack strategies."""
+    none: SimResult = Field(..., description="Simulation outcome with no intervention (true baseline)")
+    degree: SimResult = Field(..., description="Simulation outcome under degree-centrality intervention")
     optimized: SimResult = Field(..., description="Simulation outcome under knapsack/optimized intervention")
 
     model_config = ConfigDict(extra="ignore")

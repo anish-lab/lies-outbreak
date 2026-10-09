@@ -36,6 +36,8 @@ try:
         SimResponse,
         ErrorResponse,
     )
+    from backend.simulator import run_simulation
+    from backend.data_engine import generate_synthetic_graph, get_network as de_get_network
 except ImportError:
     from models import (
         GraphNode,
@@ -47,6 +49,8 @@ except ImportError:
         SimResponse,
         ErrorResponse,
     )
+    from simulator import run_simulation
+    from data_engine import generate_synthetic_graph, get_network as de_get_network
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("outbreak-api")
@@ -159,13 +163,20 @@ def generate_fallback_graph(graph_type: str) -> nx.Graph:
 
 
 def get_cached_or_build_graph(graph_type: str) -> nx.Graph:
-    """Retrieve graph from cache or construct via M1 / fallback."""
+    """Retrieve graph from cache or construct via data_engine."""
     key = graph_type.lower().strip()
     if key in _GRAPH_CACHE:
         return _GRAPH_CACHE[key]
 
-    graph = try_import_m1_graph(key)
-    if graph is None:
+    try:
+        if key == "synthetic":
+            graph = generate_synthetic_graph(l=8, k=25)
+            logger.info("Built synthetic graph via data_engine (l=8, k=25): %d nodes", len(graph))
+        else:
+            graph = de_get_network(key)
+            logger.info("Built %s graph via data_engine: %d nodes", key, len(graph))
+    except Exception as exc:
+        logger.warning("data_engine failed (%s), falling back to generate_fallback_graph: %s", key, exc)
         graph = generate_fallback_graph(key)
 
     _GRAPH_CACHE[key] = graph
@@ -401,7 +412,7 @@ def get_network(
     tags=["Simulation"],
 )
 def simulate(request: SimRequest):
-    """Run rumour propagation simulation comparing baseline vs knapsack strategies.
+    """Run rumour propagation simulation comparing no-intervention, degree, and knapsack strategies.
 
     Official requirements:
     - Show the spread of the rumour with and without intervention.
@@ -420,10 +431,16 @@ def simulate(request: SimRequest):
             detail="Start node cannot be empty.",
         )
 
-    # Use default/active network (synthetic) to run simulation
+    dataset = request.dataset.lower().strip() if request.dataset else "synthetic"
+    if dataset not in ["snap", "synthetic"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid dataset '{dataset}'. Must be 'snap' or 'synthetic'.",
+        )
+
     try:
-        graph = get_cached_or_build_graph("synthetic")
-        
+        graph = get_cached_or_build_graph(dataset)
+
         # Verify that start_node exists in the social network
         if start_node not in graph.nodes():
             available = list(graph.nodes())[:5]
@@ -432,12 +449,33 @@ def simulate(request: SimRequest):
                 detail=f"Start node '{start_node}' not found in the social network. Sample valid nodes: {available}",
             )
 
-        # Attempt to run M2's implementation first; fallback if unavailable
-        sim_result = try_import_m2_simulator(graph, start_node, request.budget)
-        if sim_result is None:
-            sim_result = run_fallback_simulation(graph, start_node, request.budget)
+        # Use a shared seed so all three runs experience the same cascade randomness
+        shared_seed = 42
 
-        return sim_result
+        none_raw = run_simulation(graph, start_node, budget=0, strategy="none", seed=shared_seed)
+        degree_raw = run_simulation(graph, start_node, budget=request.budget, strategy="degree", seed=shared_seed)
+        knapsack_raw = run_simulation(graph, start_node, budget=request.budget, strategy="knapsack", seed=shared_seed)
+
+        def _to_sim_result(raw: dict) -> SimResult:
+            ticks = [
+                Tick(
+                    step=t["step"],
+                    newly_infected=[str(n) for n in t.get("newly_infected", [])],
+                    cumulative_infected=t.get("cumulative_infected", 0),
+                )
+                for t in raw.get("ticks", [])
+            ]
+            return SimResult(
+                intervened_nodes=[str(n) for n in raw.get("intervened_nodes", [])],
+                total_reach=raw.get("total_reach", 0),
+                ticks=ticks,
+            )
+
+        return SimResponse(
+            none=_to_sim_result(none_raw),
+            degree=_to_sim_result(degree_raw),
+            optimized=_to_sim_result(knapsack_raw),
+        )
 
     except HTTPException:
         raise
