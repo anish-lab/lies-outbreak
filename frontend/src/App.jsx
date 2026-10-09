@@ -5,6 +5,7 @@ import GraphCanvas from './components/GraphCanvas';
 import Stepper from './components/Stepper';
 import NodeDetailsPanel from './components/NodeDetailsPanel';
 import TimelineControls from './components/TimelineControls';
+import EventLog from './components/EventLog';
 import { fetchNetwork, runSimulation } from './services/api';
 import { Loader2, ArrowRight, ShieldCheck, Info } from 'lucide-react';
 
@@ -255,7 +256,7 @@ function App() {
           <div className="flex-1 relative w-full h-full flex">
             <div className="absolute top-6 left-6 z-10 bg-black/80 px-6 py-4 rounded-2xl border border-green-500/30 shadow-[0_0_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
               <h2 className="font-black text-white text-xl tracking-tight">Active Defense Network</h2>
-              <p className="text-sm text-gray-400 mt-1 font-light">Interactive 3D View. Click nodes to analyze.</p>
+              <p className="text-sm text-gray-400 mt-1 font-light">High-Density Analytics 2D View. Crisp & readable.</p>
             </div>
             
             <GraphCanvas 
@@ -263,6 +264,12 @@ function App() {
               colors={optimizedColors} 
               onNodeClick={node => setSelectedNode(node)}
               selectedNodeId={selectedNode?.id}
+            />
+            
+            <EventLog 
+              simData={simData} 
+              currentTick={currentTick} 
+              isOptimized={true} 
             />
             
             <NodeDetailsPanel 
