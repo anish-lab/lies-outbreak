@@ -45,7 +45,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
   useEffect(() => {
     if (graphRef.current) {
       // Set camera distance closer
-      graphRef.current.cameraPosition({ z: 250 }, null, 2000);
+      graphRef.current.cameraPosition({ z: 400 }, null, 2000);
     }
   }, [network]);
   
@@ -74,7 +74,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     const sprite = new SpriteText(node.id);
     sprite.color = '#ffffff';
     sprite.textHeight = 4;
-    sprite.position.y = 8;
+    sprite.position.y = 10; sprite.backgroundColor = 'rgba(0,0,0,0.6)'; sprite.padding = 1; sprite.borderRadius = 2; sprite.material.depthTest = false;
     if (isDimmed) sprite.material.opacity = 0.2;
     group.add(sprite);
 

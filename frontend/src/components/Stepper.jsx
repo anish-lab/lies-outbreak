@@ -11,7 +11,7 @@ const steps = [
 
 const Stepper = ({ currentStep }) => {
   return (
-    <div className="w-full py-6 px-8 bg-transparent">
+    <div className="w-full pt-6 pb-12 px-8 bg-transparent">
       <div className="max-w-4xl mx-auto flex items-center justify-between relative">
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-white/10 z-0">
           <div 
