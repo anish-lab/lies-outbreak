@@ -46,7 +46,7 @@ const mockSimulation = {
 
 export const fetchNetwork = async () => {
   try {
-    const res = await axios.get('/api/network');
+    const res = await axios.get('/api/network?type=snap');
     // If Vite returns index.html or an empty object, force throw to use mock
     if (!res.data || !res.data.nodes) throw new Error('Invalid network data');
     

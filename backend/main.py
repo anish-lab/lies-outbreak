@@ -77,7 +77,7 @@ _GRAPH_CACHE: Dict[str, nx.Graph] = {}
 def try_import_m1_graph(graph_type: str) -> Optional[nx.Graph]:
     """Attempt to delegate graph generation to Member 1's module if available."""
     candidates = [
-        "backend.graph_generator",
+        "backend.data_engine", "backend.graph_generator",
         "graph_generator",
         "backend.graph",
         "graph",

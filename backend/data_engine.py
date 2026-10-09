@@ -140,3 +140,27 @@ def get_graph_as_dicts(G: nx.Graph) -> Dict[str, List[Dict[str, Any]]]:
         })
         
     return {"nodes": nodes, "edges": edges}
+
+import os
+import urllib.request
+import gzip
+
+def get_network(graph_type: str) -> nx.Graph:
+    if graph_type == 'synthetic':
+        return generate_synthetic_graph()
+    
+    # Otherwise load snap data
+    url = "https://snap.stanford.edu/data/facebook_combined.txt.gz"
+    cache_path = "facebook_combined.txt.gz"
+    
+    if not os.path.exists(cache_path):
+        print("Downloading SNAP data...")
+        urllib.request.urlretrieve(url, cache_path)
+        
+    edges = []
+    with gzip.open(cache_path, 'rt') as f:
+        for line in f:
+            u, v = line.strip().split()
+            edges.append({"source": u, "target": v})
+            
+    return ingest_snap_dataset(edges, target_size=300)
