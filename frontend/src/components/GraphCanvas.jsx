@@ -43,51 +43,55 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
 
   // High-performance Canvas 2D drawing for nodes
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
-    const colorStr = colors[node.id] || '#3b82f6';
+    // Robust color lookup in case of string/number type mismatches
+    const colorStr = colors[node.id] || colors[String(node.id)] || colors[Number(node.id)] || '#3b82f6';
+    
     const isSelected = selectedNodeId === node.id;
     const isNeighbor = selectedNodeId && neighborMap[selectedNodeId]?.has(node.id);
     
-    // In High-Density 2D mode, we don't need aggressive dimming, 
-    // but we can slightly fade non-relevant nodes.
+    // In High-Density 2D mode, slightly fade non-relevant nodes
     const isDimmed = selectedNodeId && !isSelected && !isNeighbor;
     
-    const size = isSelected ? 8 : 4;
+    // Make infected/intervened nodes significantly larger so they stand out
+    const isSpecial = colorStr === '#ef4444' || colorStr === '#22c55e';
+    const size = isSelected ? 12 : (isSpecial ? 8 : 5);
     
-    // Draw glowing aura for infected/intervened nodes
-    if (!isDimmed && (colorStr === '#ef4444' || colorStr === '#22c55e' || isSelected)) {
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, size * 2.5, 0, 2 * Math.PI, false);
-      ctx.fillStyle = colorStr;
-      ctx.globalAlpha = 0.15;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    // Draw core node
+    // Draw core node with premium drop-shadow glow
     ctx.beginPath();
     ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
     ctx.fillStyle = colorStr;
-    ctx.globalAlpha = isDimmed ? 0.2 : 1;
+    
+    if (!isDimmed && (isSpecial || isSelected)) {
+      ctx.shadowBlur = isSelected ? 20 : 15;
+      ctx.shadowColor = colorStr;
+    } else {
+      ctx.shadowBlur = 0;
+    }
+    
+    ctx.globalAlpha = isDimmed ? 0.15 : 1;
     ctx.fill();
     
-    // Draw border
-    ctx.lineWidth = isSelected ? 2 : 1;
+    // Reset shadow for border and text
+    ctx.shadowBlur = 0;
+    
+    // Draw crisp border
+    ctx.lineWidth = isSelected ? 2.5 : 1;
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = isDimmed ? 0.1 : (isSelected ? 1 : 0.5);
+    ctx.globalAlpha = isDimmed ? 0.1 : (isSelected ? 1 : 0.6);
     ctx.stroke();
     
     // Draw text label only if zoomed in enough OR if selected/infected
-    const showText = globalScale > 1.5 || isSelected || colorStr === '#ef4444' || colorStr === '#22c55e';
+    const showText = globalScale > 1.2 || isSelected || isSpecial;
     
     if (showText && !isDimmed) {
-      const label = node.id;
+      const label = String(node.id);
       const fontSize = isSelected ? 14/globalScale : 10/globalScale;
       ctx.font = `bold ${fontSize}px Consolas, monospace`;
       
       // Draw background pill
       const textWidth = ctx.measureText(label).width;
       const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.4);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y + size + 2, bckgDimensions[0], bckgDimensions[1]);
       
       // Draw text
