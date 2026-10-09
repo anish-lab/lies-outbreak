@@ -129,8 +129,8 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     
     if (infectedIds.size === 0) return;
     
-    // Extract the 3D position of these nodes from the ForceGraph internal data
-    const nodes = graphRef.current.graphData().nodes;
+    // Extract the 3D position of these nodes from the mutated network array
+    const nodes = network.nodes;
     const infectedNodes = nodes.filter(n => infectedIds.has(n.id) && n.x !== undefined);
     
     if (infectedNodes.length > 0) {
