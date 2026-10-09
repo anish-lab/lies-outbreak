@@ -35,7 +35,7 @@ def run_simulation(
     strategy: str = "knapsack",
     seed: Optional[int] = None,
 ) -> Dict:
-    """Run an Independent Cascade simulation on graph *G*.
+    """Run an Independent Cascade simulation on graph G.
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ def run_simulation(
     # 2. Independent Cascade propagation
     # ------------------------------------------------------------------
     infected: set = {start_str}
-    frontier: List[str] = [start_str]          # nodes infected this step
+    frontier: List[str] = [start_str]
 
     ticks = [
         {
@@ -143,7 +143,7 @@ def run_simulation(
 # ---------------------------------------------------------------------------
 
 def _resolve_node(G: nx.Graph, node_str: str) -> Any:
-    """Return the actual node object in *G* whose str() equals *node_str*.
+    """Return the actual node object in G whose str() equals node_str.
 
     Handles graphs whose nodes are integers (the common NetworkX default).
     """

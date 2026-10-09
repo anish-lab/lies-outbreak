@@ -6,8 +6,8 @@ Exposed functions
 degree_intervention(G, budget)   -> List[str]
 knapsack_intervention(G, budget) -> List[str]
 
-Both return a list of node identifiers (str) to block *before* the cascade
-runs.  Blocked nodes have a strict 0 % chance of being infected.
+Both return a list of node identifiers (str) to block before the cascade
+runs.  Blocked nodes have a strict 0% chance of being infected.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ import networkx as nx
 def degree_intervention(G: nx.Graph, budget: int) -> List[str]:
     """Block the *budget* nodes with the highest degree.
 
-    This is the simplest possible heuristic: highly connected nodes are
-    efficient rumour relays, so removing them limits cascading spread.
+    Highly connected nodes are efficient rumour relays, so removing them
+    limits cascading spread.
 
     Parameters
     ----------
@@ -48,14 +48,15 @@ def degree_intervention(G: nx.Graph, budget: int) -> List[str]:
 
 def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
     """Iterative greedy knapsack — picks the highest-ROI node each round,
-    then **re-computes centralities** on the reduced graph before the next
-    pick.  This accounts for the fact that removing one hub changes the
-    structural importance of every remaining node.
+    then re-computes centralities on the reduced graph before the next pick.
+
+    This addresses the official challenge: "Selecting one user may change
+    the importance of other users."
 
     ROI  =  betweenness_centrality(node)  /  max(degree(node), 1)
 
-    Betweenness is approximated with ``k=50`` random pivots for speed
-    (``nx.betweenness_centrality(G, k=50)``).
+    Betweenness is approximated with k=50 random pivots for speed
+    (nx.betweenness_centrality(G, k=50)).
 
     Parameters
     ----------
@@ -77,7 +78,7 @@ def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
         if n_nodes == 0:
             break
 
-        # Approximate betweenness centrality for speed
+        # Approximate betweenness centrality for speed (k=50 pivot nodes)
         k_samples = min(50, n_nodes)
         betweenness = nx.betweenness_centrality(working_G, k=k_samples)
 
@@ -87,7 +88,7 @@ def knapsack_intervention(G: nx.Graph, budget: int) -> List[str]:
 
         for node in working_G.nodes():
             degree = working_G.degree(node)
-            cost = max(degree, 1)           # avoid division by zero for isolates
+            cost = max(degree, 1)       # avoid division by zero for isolates
             roi = betweenness[node] / cost
             if roi > best_roi:
                 best_roi = roi

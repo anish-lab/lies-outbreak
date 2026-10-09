@@ -1,8 +1,8 @@
 """
 test_simulation.py — Pytest suite for the Outbreak of Lies simulation engine.
 
-Run from the repo root:
-    pytest backend/tests -q
+Run from the CommitCon root:
+    python3 -m pytest backend/tests/test_simulation.py -q
 
 Expected: 17 passed
 """
