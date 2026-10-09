@@ -49,7 +49,12 @@ export const fetchNetwork = async () => {
     const res = await axios.get('/api/network');
     // If Vite returns index.html or an empty object, force throw to use mock
     if (!res.data || !res.data.nodes) throw new Error('Invalid network data');
-    return res.data;
+    
+    // The backend uses "edges", but react-force-graph-2d expects "links"
+    return { 
+      nodes: res.data.nodes, 
+      links: res.data.edges || res.data.links || []
+    };
   } catch (err) {
     console.warn('Backend unavailable, using mock network data');
     return mockNetwork;
