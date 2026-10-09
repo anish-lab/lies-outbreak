@@ -9,6 +9,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        // Allow up to 60s for compute-heavy benchmark/sweep endpoints
+        proxyTimeout: 60000,
+        timeout: 60000,
       }
     }
   }

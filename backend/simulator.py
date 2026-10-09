@@ -21,7 +21,12 @@ from typing import Any, Dict, List, Optional
 
 import networkx as nx
 
-from backend.interventions import degree_intervention, knapsack_intervention
+from backend.interventions import (
+    degree_intervention,
+    knapsack_intervention,
+    random_intervention,
+    betweenness_intervention,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -34,6 +39,7 @@ def run_simulation(
     budget: int = 0,
     strategy: str = "knapsack",
     seed: Optional[int] = None,
+    intervened_nodes: Optional[List[str]] = None,
 ) -> Dict:
     """Run an Independent Cascade simulation on graph *G*.
 
@@ -41,7 +47,7 @@ def run_simulation(
     ----------
     G : nx.Graph
         NetworkX graph whose nodes carry at least a ``susceptibility``
-        attribute (float 0-1).  Nodes may also carry ``degree`` and
+        attribute (float 0-1). Nodes may also carry ``degree`` and
         ``betweenness`` attributes (used by the intervention strategies).
     start_node : any hashable
         The node where the rumour originates.
@@ -49,10 +55,13 @@ def run_simulation(
         Maximum number of nodes that may be intervened on (blocked).
         When 0 or strategy is "none", no intervention is applied.
     strategy : str
-        Intervention strategy.  One of "none", "degree", "knapsack".
+        Intervention strategy. One of "none", "random", "degree", "betweenness", "knapsack".
     seed : int or None
         Seed for the random number generator (makes the cascade
         deterministic for testing / reproducibility).
+    intervened_nodes : list of str, optional
+        Precomputed list of nodes to block. If provided, skips recomputing
+        interventions to allow instant Monte Carlo and sweep execution.
 
     Returns
     -------
@@ -67,9 +76,15 @@ def run_simulation(
     # ------------------------------------------------------------------
     intervened_set: set = set()
 
-    if budget > 0 and strategy not in ("none",):
-        if strategy == "degree":
+    if intervened_nodes is not None:
+        intervened_set = set(str(n) for n in intervened_nodes)
+    elif budget > 0 and strategy not in ("none",):
+        if strategy == "random":
+            intervened_set = set(random_intervention(G, budget, start_node=str(start_node), seed=seed))
+        elif strategy == "degree":
             intervened_set = set(degree_intervention(G, budget, start_node=str(start_node)))
+        elif strategy == "betweenness":
+            intervened_set = set(betweenness_intervention(G, budget, start_node=str(start_node)))
         elif strategy == "knapsack":
             intervened_set = set(knapsack_intervention(G, budget, start_node=str(start_node)))
 
@@ -115,7 +130,7 @@ def run_simulation(
                 if nbr_str in infected or nbr_str in intervened_set:
                     continue
 
-                susceptibility = G.nodes[neighbour].get("susceptibility", 0.5)
+                susceptibility = G.nodes[neighbour].get("susceptibility", 0.25)
                 if random.random() < susceptibility:
                     infected.add(nbr_str)
                     next_frontier.append(nbr_str)

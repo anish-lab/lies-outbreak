@@ -206,16 +206,6 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
         enablePanInteraction={!staticMode}
       />
 
-          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-          if (sourceId === selectedNodeId || targetId === selectedNodeId) return 2;
-          return 0;
-        }}
-        linkDirectionalParticleWidth={3}
-        linkDirectionalParticleColor={() => '#60a5fa'}
-        onNodeClick={handleNodeClick}
-        backgroundColor="#050505"
-        d3VelocityDecay={0.3} // Make physics settle faster in 2D
-      />
       
       {/* Premium Cyber Legend */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10">

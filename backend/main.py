@@ -10,6 +10,8 @@ import os
 import sys
 import logging
 import random
+import math
+import statistics
 from typing import Dict, List, Optional, Tuple, Any
 import importlib
 
@@ -35,8 +37,20 @@ try:
         SimResult,
         SimResponse,
         ErrorResponse,
+        BenchmarkRequest,
+        StrategyBenchmarkResult,
+        BenchmarkResponse,
+        SweepRequest,
+        SweepPoint,
+        SweepResponse,
     )
     from backend.simulator import run_simulation
+    from backend.interventions import (
+        random_intervention,
+        degree_intervention,
+        betweenness_intervention,
+        knapsack_intervention,
+    )
     from backend.data_engine import generate_synthetic_graph, get_network as de_get_network
 except ImportError:
     from models import (
@@ -48,8 +62,20 @@ except ImportError:
         SimResult,
         SimResponse,
         ErrorResponse,
+        BenchmarkRequest,
+        StrategyBenchmarkResult,
+        BenchmarkResponse,
+        SweepRequest,
+        SweepPoint,
+        SweepResponse,
     )
     from simulator import run_simulation
+    from interventions import (
+        random_intervention,
+        degree_intervention,
+        betweenness_intervention,
+        knapsack_intervention,
+    )
     from data_engine import generate_synthetic_graph, get_network as de_get_network
 
 logging.basicConfig(level=logging.INFO)
@@ -405,14 +431,14 @@ def get_network(
     "/api/simulate",
     response_model=SimResponse,
     responses={
-        200: {"description": "Simulation comparison containing baseline and optimized timeline ticks."},
+        200: {"description": "Simulation comparison containing all strategies timeline ticks."},
         400: {"model": ErrorResponse, "description": "Invalid simulation parameters."},
         500: {"model": ErrorResponse, "description": "Internal server error."},
     },
     tags=["Simulation"],
 )
 def simulate(request: SimRequest):
-    """Run rumour propagation simulation comparing no-intervention, degree, and knapsack strategies.
+    """Run rumour propagation simulation comparing none, random, degree, betweenness, and knapsack strategies.
 
     Official requirements:
     - Show the spread of the rumour with and without intervention.
@@ -449,11 +475,13 @@ def simulate(request: SimRequest):
                 detail=f"Start node '{start_node}' not found in the social network. Sample valid nodes: {available}",
             )
 
-        # Use a shared seed so all three runs experience the same cascade randomness
+        # Use a shared seed so all runs experience the same cascade randomness
         shared_seed = 42
 
         none_raw = run_simulation(graph, start_node, budget=0, strategy="none", seed=shared_seed)
+        random_raw = run_simulation(graph, start_node, budget=request.budget, strategy="random", seed=shared_seed)
         degree_raw = run_simulation(graph, start_node, budget=request.budget, strategy="degree", seed=shared_seed)
+        betweenness_raw = run_simulation(graph, start_node, budget=request.budget, strategy="betweenness", seed=shared_seed)
         knapsack_raw = run_simulation(graph, start_node, budget=request.budget, strategy="knapsack", seed=shared_seed)
 
         def _to_sim_result(raw: dict) -> SimResult:
@@ -471,10 +499,16 @@ def simulate(request: SimRequest):
                 ticks=ticks,
             )
 
+        deg_res = _to_sim_result(degree_raw)
+        rnd_res = _to_sim_result(random_raw)
+
         return SimResponse(
             none=_to_sim_result(none_raw),
-            degree=_to_sim_result(degree_raw),
+            degree=deg_res,
             optimized=_to_sim_result(knapsack_raw),
+            random=rnd_res,
+            betweenness=_to_sim_result(betweenness_raw),
+            baseline=deg_res,  # Backward compatibility alias for degree baseline
         )
 
     except HTTPException:
@@ -484,6 +518,251 @@ def simulate(request: SimRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Simulation error: {str(exc)}",
+        )
+
+
+@app.post(
+    "/api/benchmark",
+    response_model=BenchmarkResponse,
+    responses={
+        200: {"description": "Monte Carlo benchmark statistics for all strategies (100 runs, mean, std, 95% CI)."},
+        400: {"model": ErrorResponse, "description": "Invalid benchmark parameters."},
+        500: {"model": ErrorResponse, "description": "Internal server error."},
+    },
+    tags=["Benchmark"],
+)
+def run_benchmark(request: BenchmarkRequest):
+    """Execute multiple Monte Carlo simulations per strategy (default 100 runs) with shared seeds.
+
+    Calculates:
+    - Mean total infected reach
+    - Sample standard deviation
+    - 95% Confidence Interval (margin of error)
+    - Comprehensive leaderboard comparing Unprotected, Random, Degree, Pure-Betweenness, and Knapsack.
+    """
+    if request.budget < 0:
+        raise HTTPException(status_code=400, detail="Budget cannot be negative.")
+    if request.runs < 1 or request.runs > 500:
+        raise HTTPException(status_code=400, detail="Runs must be between 1 and 500.")
+
+    start_node = request.start_node.strip()
+    dataset = request.dataset.lower().strip() if request.dataset else "snap"
+    if dataset not in ["snap", "synthetic"]:
+        raise HTTPException(status_code=400, detail=f"Invalid dataset '{dataset}'. Must be 'snap' or 'synthetic'.")
+
+    try:
+        graph = get_cached_or_build_graph(dataset)
+        if start_node not in graph.nodes():
+            available = list(graph.nodes())[:5]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Start node '{start_node}' not found in the social network. Sample valid nodes: {available}",
+            )
+
+        # Generate shared seeds so all strategies face the identical propagation events per run
+        shared_seeds = [10000 + i * 37 for i in range(request.runs)]
+
+        # Precompute deterministic interventions for fixed strategies to maximize performance
+        degree_blocked = degree_intervention(graph, request.budget, start_node=start_node) if request.budget > 0 else []
+        betweenness_blocked = betweenness_intervention(graph, request.budget, start_node=start_node) if request.budget > 0 else []
+        knapsack_blocked = knapsack_intervention(graph, request.budget, start_node=start_node) if request.budget > 0 else []
+
+        strategy_configs = [
+            ("none", "Unprotected (No Intervention)", []),
+            ("random", "Random Baseline", None),  # Picked per seed or once
+            ("degree", "Degree Centrality Baseline", degree_blocked),
+            ("betweenness", "Pure Betweenness Baseline", betweenness_blocked),
+            ("knapsack", "Knapsack Optimal (ROI)", knapsack_blocked),
+        ]
+
+        # First collect results
+        reaches_by_strat: Dict[str, List[int]] = {strat: [] for strat, _, _ in strategy_configs}
+        intervened_by_strat: Dict[str, List[str]] = {
+            "none": [],
+            "degree": degree_blocked,
+            "betweenness": betweenness_blocked,
+            "knapsack": knapsack_blocked,
+        }
+
+        # For random baseline, precompute a representative set
+        random_representative = random_intervention(graph, request.budget, start_node=start_node, seed=42)
+        intervened_by_strat["random"] = random_representative
+
+        strat_nodes_map = {
+            "none": [],
+            "random": random_representative,
+            "degree": degree_blocked,
+            "betweenness": betweenness_blocked,
+            "knapsack": knapsack_blocked,
+        }
+
+        # Run simulations across shared seeds instantly using precomputed interventions
+        for s in shared_seeds:
+            for strat_key, _, _ in strategy_configs:
+                res = run_simulation(
+                    graph,
+                    start_node=start_node,
+                    budget=request.budget,
+                    strategy=strat_key,
+                    seed=s,
+                    intervened_nodes=strat_nodes_map[strat_key],
+                )
+                reaches_by_strat[strat_key].append(res["total_reach"])
+
+        # Calculate statistics
+        none_mean = float(statistics.mean(reaches_by_strat["none"])) if reaches_by_strat["none"] else 1.0
+
+        stats_dict: Dict[str, StrategyBenchmarkResult] = {}
+        for strat_key, label, _ in strategy_configs:
+            reaches = reaches_by_strat[strat_key]
+            n = len(reaches)
+            mean_val = float(statistics.mean(reaches))
+            std_val = float(statistics.stdev(reaches)) if n > 1 else 0.0
+
+            # 95% Confidence Interval for the mean: z = 1.96
+            margin = float(1.96 * (std_val / math.sqrt(n))) if n > 0 else 0.0
+            ci_lower = max(0.0, round(mean_val - margin, 2))
+            ci_upper = round(mean_val + margin, 2)
+
+            reduction = max(0.0, round(((none_mean - mean_val) / none_mean) * 100, 1)) if none_mean > 0 else 0.0
+            saved = max(0.0, round(none_mean - mean_val, 1))
+
+            stats_dict[strat_key] = StrategyBenchmarkResult(
+                strategy=strat_key,
+                label=label,
+                runs=n,
+                mean_reach=round(mean_val, 2),
+                std_dev=round(std_val, 2),
+                ci95_lower=ci_lower,
+                ci95_upper=ci_upper,
+                ci95_margin=round(margin, 2),
+                min_reach=min(reaches),
+                max_reach=max(reaches),
+                reduction_pct=reduction,
+                users_saved=saved,
+                intervened_nodes=intervened_by_strat.get(strat_key, []),
+            )
+
+        # Leaderboard: lowest mean reach is best
+        leaderboard = sorted(list(stats_dict.values()), key=lambda x: x.mean_reach)
+
+        return BenchmarkResponse(
+            dataset=dataset,
+            start_node=start_node,
+            budget=request.budget,
+            runs=request.runs,
+            strategies=stats_dict,
+            leaderboard=leaderboard,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Benchmark execution failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Benchmark error: {str(exc)}",
+        )
+
+
+@app.post(
+    "/api/sweep",
+    response_model=SweepResponse,
+    responses={
+        200: {"description": "Budget sweep evaluation across strategies (k=1 to 15)."},
+        400: {"model": ErrorResponse, "description": "Invalid parameters."},
+        500: {"model": ErrorResponse, "description": "Internal server error."},
+    },
+    tags=["Benchmark"],
+)
+def run_budget_sweep(request: SweepRequest):
+    """Evaluate rumour containment across varying defense budgets k (default k = 1 to 15).
+
+    Identifies the diminishing returns / flattening threshold for each strategy.
+    """
+    if request.min_budget < 0 or request.max_budget < request.min_budget:
+        raise HTTPException(status_code=400, detail="Invalid budget bounds.")
+
+    start_node = request.start_node.strip()
+    dataset = request.dataset.lower().strip() if request.dataset else "snap"
+
+    try:
+        graph = get_cached_or_build_graph(dataset)
+        if start_node not in graph.nodes():
+            available = list(graph.nodes())[:5]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Start node '{start_node}' not found in the social network. Sample valid nodes: {available}",
+            )
+
+        runs = max(5, min(request.runs_per_budget, 30))
+        shared_seeds = [20000 + i * 23 for i in range(runs)]
+
+        points: List[SweepPoint] = []
+        knapsack_means: List[float] = []
+
+        # Cache baseline "none" once since budget 0 doesn't change
+        none_reaches = [
+            run_simulation(graph, start_node, budget=0, strategy="none", seed=s, intervened_nodes=[])["total_reach"]
+            for s in shared_seeds
+        ]
+        none_mean = round(float(statistics.mean(none_reaches)), 2)
+
+        # Precompute interventions up to max_budget ONCE for instant sweep execution
+        max_k = request.max_budget
+        degree_all = degree_intervention(graph, max_k, start_node=start_node)
+        betweenness_all = betweenness_intervention(graph, max_k, start_node=start_node)
+        knapsack_all = knapsack_intervention(graph, max_k, start_node=start_node)
+        random_all = random_intervention(graph, max_k, start_node=start_node, seed=42)
+
+        for k in range(request.min_budget, request.max_budget + 1):
+            strat_means: Dict[str, float] = {"none": none_mean}
+
+            strat_k_blocked = {
+                "random": random_all[:k],
+                "degree": degree_all[:k],
+                "betweenness": betweenness_all[:k],
+                "knapsack": knapsack_all[:k],
+            }
+
+            for strat in ["random", "degree", "betweenness", "knapsack"]:
+                blocked_k = strat_k_blocked[strat]
+                reaches = [
+                    run_simulation(graph, start_node, budget=k, strategy=strat, seed=s, intervened_nodes=blocked_k)["total_reach"]
+                    for s in shared_seeds
+                ]
+                strat_means[strat] = round(float(statistics.mean(reaches)), 2)
+
+            knapsack_means.append(strat_means["knapsack"])
+            points.append(SweepPoint(budget=k, strategies=strat_means))
+
+        # Detect elbow / flattening point for knapsack (where marginal reduction < 2.0 or drop flattens)
+        flattening_k = None
+        for idx in range(1, len(knapsack_means)):
+            marginal_gain = knapsack_means[idx - 1] - knapsack_means[idx]
+            if marginal_gain <= 1.5:
+                flattening_k = request.min_budget + idx
+                break
+        if flattening_k is None and points:
+            flattening_k = min(5, request.max_budget)
+
+        return SweepResponse(
+            dataset=dataset,
+            start_node=start_node,
+            min_budget=request.min_budget,
+            max_budget=request.max_budget,
+            runs_per_budget=runs,
+            points=points,
+            flattening_budget=flattening_k,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Budget sweep failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Budget sweep error: {str(exc)}",
         )
 
 

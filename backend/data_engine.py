@@ -110,7 +110,10 @@ def _enrich_graph_attributes(G: nx.Graph) -> nx.Graph:
     for n in G.nodes():
         G.nodes[n]['degree'] = int(G.degree(n))
         G.nodes[n]['betweenness'] = float(betweenness[n])
-        G.nodes[n]['susceptibility'] = random.uniform(0.0, 1.0)
+        # Beta distribution with alpha=2.0, beta=6.0 has mean=0.25, peaked around 0.2 to 0.3
+        # Prevents rumour saturation so infection spreads gradually in a graded manner
+        raw_beta = random.betavariate(2.0, 6.0)
+        G.nodes[n]['susceptibility'] = round(min(0.95, max(0.05, raw_beta)), 4)
         
     return G
 
