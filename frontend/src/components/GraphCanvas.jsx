@@ -116,6 +116,54 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     }
   }, [onNodeClick]);
 
+  // Cinematic Auto-Tracking: When infection spreads, fly camera to the centroid of infected nodes
+  useEffect(() => {
+    if (!graphRef.current || !network?.nodes) return;
+    
+    // Find all currently infected nodes (red color)
+    const infectedIds = new Set(
+      Object.entries(colors)
+        .filter(([id, color]) => color === '#ef4444')
+        .map(([id]) => id)
+    );
+    
+    if (infectedIds.size === 0) return;
+    
+    // Extract the 3D position of these nodes from the ForceGraph internal data
+    const nodes = graphRef.current.graphData().nodes;
+    const infectedNodes = nodes.filter(n => infectedIds.has(n.id) && n.x !== undefined);
+    
+    if (infectedNodes.length > 0) {
+      // Calculate bounding box of infected nodes
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      
+      infectedNodes.forEach(n => {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+        if (n.z < minZ) minZ = n.z;
+        if (n.z > maxZ) maxZ = n.z;
+      });
+      
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const centerZ = (minZ + maxZ) / 2;
+      
+      // Calculate max spread to determine zoom distance (min 80, max 300)
+      const maxSpread = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 80); 
+      const distance = Math.min(maxSpread * 1.5, 300);
+      
+      graphRef.current.cameraPosition(
+        { x: centerX, y: centerY, z: centerZ + distance }, 
+        { x: centerX, y: centerY, z: centerZ }, 
+        800 // smooth transition tracking
+      );
+    }
+  }, [colors, network]);
+
   return (
     <div ref={containerRef} className="w-full h-full bg-[#050505] relative rounded-lg overflow-hidden border border-gray-800/60 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]">
       <ForceGraph3D
