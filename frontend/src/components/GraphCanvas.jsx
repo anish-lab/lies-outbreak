@@ -41,13 +41,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Zoom in on load
-  useEffect(() => {
-    if (graphRef.current) {
-      // Set camera distance closer
-      graphRef.current.cameraPosition({ z: 400 }, null, 2000);
-    }
-  }, [network]);
+  // Auto zoom handled by onEngineStop
   
   // Custom Node Object for aggressive glowing and text labels
   const nodeThreeObject = useCallback((node) => {
@@ -135,6 +129,11 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId }) => {
         linkDirectionalParticleWidth={2}
         linkDirectionalParticleColor={() => '#60a5fa'}
         onNodeClick={onNodeClick}
+        onEngineStop={() => {
+          if (graphRef.current) {
+            graphRef.current.zoomToFit(1000, 50);
+          }
+        }}
         backgroundColor="#050505" // Deep cyber space
         showNavInfo={false}
       />
