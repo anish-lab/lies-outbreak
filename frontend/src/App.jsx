@@ -437,9 +437,9 @@ function App() {
             <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40">
               <button
                 onClick={() => { setActiveTab('sim'); setStep(2); }}
-                className="bg-black/80 hover:bg-white hover:text-black border border-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-bold transition-all shadow-[0_0_16px_rgba(0,0,0,0.5)] tracking-widest uppercase"
+                className="bg-black/80 hover:bg-white hover:text-black border border-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-bold transition-all shadow-[0_0_16px_rgba(0,0,0,0.5)] tracking-widest uppercase flex items-center gap-2"
               >
-                ← Return to 3D Explorer
+                <ArrowLeft size={14} /> Go Back to Configuration
               </button>
               <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Comparative Analysis — Tick {currentTick}</span>
             </div>

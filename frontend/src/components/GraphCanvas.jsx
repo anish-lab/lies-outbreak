@@ -83,7 +83,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
     // Draw text label only if zoomed in enough OR if selected/infected
     const showText = globalScale > 1.2 || isSelected || isSpecial;
     
-    if (showText && !isDimmed && !staticMode) {
+    if (showText && !isDimmed && !staticMode && !isSplitView) {
       const label = String(node.id);
       const fontSize = isSelected ? 14/globalScale : 10/globalScale;
       ctx.font = `bold ${fontSize}px Consolas, monospace`;
@@ -103,7 +103,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
     }
     
     ctx.globalAlpha = 1; // Reset
-  }, [colors, selectedNodeId, neighborMap, staticMode]);
+  }, [colors, selectedNodeId, neighborMap, staticMode, isSplitView]);
 
   const handleNodeClick = useCallback((node) => {
     if (staticMode) return;
@@ -199,11 +199,11 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
         linkDirectionalParticleColor={() => '#60a5fa'}
         onNodeClick={handleNodeClick}
         backgroundColor="#050505"
-        d3VelocityDecay={staticMode ? 1 : 0.3} // Static mode freezes physics immediately
-        cooldownTicks={staticMode ? 0 : Infinity} // Stop engine if static
+        d3VelocityDecay={(staticMode || isSplitView) ? 1 : 0.3}
+        cooldownTicks={(staticMode || isSplitView) ? 0 : Infinity}
         enableNodeDrag={!staticMode && !isSplitView}
-        enableZoomInteraction={!staticMode}
-        enablePanInteraction={!staticMode}
+        enableZoomInteraction={!staticMode && !isSplitView}
+        enablePanInteraction={!staticMode && !isSplitView}
       />
       
       {/* Premium Cyber Legend */}
