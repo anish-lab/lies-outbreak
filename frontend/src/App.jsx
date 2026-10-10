@@ -33,6 +33,7 @@ function App() {
   const [optimizedInfectedCount, setOptimizedInfectedCount] = useState(0);
 
   const [selectedNode, setSelectedNode] = useState(null);
+  const [staticNetworks, setStaticNetworks] = useState(null);
 
   // Error banner state
   const [errorMsg, setErrorMsg] = useState(null);
@@ -250,7 +251,18 @@ function App() {
               />
               {step === 4 && (
                 <button
-                  onClick={() => setStep(5)}
+                  onClick={() => {
+                    const cloneGraph = () => ({
+                      nodes: network.nodes.map(n => ({ ...n })),
+                      links: network.links.map(l => ({ ...l }))
+                    });
+                    setStaticNetworks({
+                      none: cloneGraph(),
+                      degree: cloneGraph(),
+                      optimized: cloneGraph()
+                    });
+                    setStep(5);
+                  }}
                   className="flex items-center gap-1.5 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg font-bold shadow-[0_0_16px_rgba(255,255,255,0.2)] transition-all uppercase tracking-widest text-[10px] shrink-0"
                 >
                   Split View <ArrowRight size={13} />
@@ -435,33 +447,33 @@ function App() {
             {/* Three graph panels */}
             <div className="flex-1 flex gap-3 min-h-0 p-3">
               {/* Panel 1: No Intervention */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-red-500/20 shadow-[0_0_24px_rgba(239,68,68,0.08)] min-h-0">
+              <div className="flex-1 relative rounded-xl overflow-hidden border border-red-500/20 shadow-[0_0_24px_rgba(239,68,68,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 left-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-red-500/30 backdrop-blur-xl">
                   <h2 className="font-black text-red-400 tracking-wide uppercase text-xs">Unprotected</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">No Intervention</p>
                   <p className="text-[9px] text-red-400/70 mt-0.5 font-mono">reach: {simData?.none?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={noneColors} staticMode={true} />
+                <GraphCanvas network={staticNetworks?.none || network} colors={noneColors} isSplitView={true} />
               </div>
 
               {/* Panel 2: Degree Baseline */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-amber-500/20 shadow-[0_0_24px_rgba(245,158,11,0.08)] min-h-0">
+              <div className="flex-1 relative rounded-xl overflow-hidden border border-amber-500/20 shadow-[0_0_24px_rgba(245,158,11,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 left-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-amber-500/30 backdrop-blur-xl">
                   <h2 className="font-black text-amber-400 tracking-wide uppercase text-xs">Degree Baseline</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">Top-k Degree Heuristic</p>
                   <p className="text-[9px] text-amber-400/70 mt-0.5 font-mono">reach: {simData?.degree?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={degreeColors} staticMode={true} />
+                <GraphCanvas network={staticNetworks?.degree || network} colors={degreeColors} isSplitView={true} />
               </div>
 
               {/* Panel 3: Knapsack Optimized */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-green-500/20 shadow-[0_0_24px_rgba(34,197,94,0.08)] min-h-0">
+              <div className="flex-1 relative rounded-xl overflow-hidden border border-green-500/20 shadow-[0_0_24px_rgba(34,197,94,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 right-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-green-500/30 backdrop-blur-xl text-right">
                   <h2 className="font-black text-green-400 tracking-wide uppercase text-xs">Knapsack Optimal</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">Greedy Betweenness ROI</p>
                   <p className="text-[9px] text-green-400/70 mt-0.5 font-mono">reach: {simData?.optimized?.total_reach ?? '—'}</p>
                 </div>
-                <GraphCanvas network={network} colors={optimizedColors} staticMode={true} />
+                <GraphCanvas network={staticNetworks?.optimized || network} colors={optimizedColors} isSplitView={true} />
               </div>
             </div>
 
