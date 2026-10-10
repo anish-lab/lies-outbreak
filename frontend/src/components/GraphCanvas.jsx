@@ -164,7 +164,7 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
   }, [network]);
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-[#050505] relative rounded-lg overflow-hidden border border-gray-800/60 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]">
+    <div ref={containerRef} className={`w-full h-full bg-[#050505] relative rounded-lg overflow-hidden border border-gray-800/60 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] ${isSplitView ? 'absolute inset-0' : ''}`}>
       <ForceGraph2D
         ref={graphRef}
         width={dimensions.width}

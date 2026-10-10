@@ -444,10 +444,10 @@ function App() {
               <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Comparative Analysis — Tick {currentTick}</span>
             </div>
 
-            {/* Three graph panels */}
-            <div className="flex-1 flex gap-3 min-h-0 p-3">
+            {/* Three graph panels — CSS Grid forces equal widths */}
+            <div className="flex-1 grid grid-cols-3 gap-3 min-h-0 p-3">
               {/* Panel 1: No Intervention */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-red-500/20 shadow-[0_0_24px_rgba(239,68,68,0.08)] min-h-0 min-w-0">
+              <div className="relative rounded-xl overflow-hidden border border-red-500/20 shadow-[0_0_24px_rgba(239,68,68,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 left-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-red-500/30 backdrop-blur-xl">
                   <h2 className="font-black text-red-400 tracking-wide uppercase text-xs">Unprotected</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">No Intervention</p>
@@ -457,7 +457,7 @@ function App() {
               </div>
 
               {/* Panel 2: Degree Baseline */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-amber-500/20 shadow-[0_0_24px_rgba(245,158,11,0.08)] min-h-0 min-w-0">
+              <div className="relative rounded-xl overflow-hidden border border-amber-500/20 shadow-[0_0_24px_rgba(245,158,11,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 left-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-amber-500/30 backdrop-blur-xl">
                   <h2 className="font-black text-amber-400 tracking-wide uppercase text-xs">Degree Baseline</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">Top-k Degree Heuristic</p>
@@ -467,7 +467,7 @@ function App() {
               </div>
 
               {/* Panel 3: Knapsack Optimized */}
-              <div className="flex-1 relative rounded-xl overflow-hidden border border-green-500/20 shadow-[0_0_24px_rgba(34,197,94,0.08)] min-h-0 min-w-0">
+              <div className="relative rounded-xl overflow-hidden border border-green-500/20 shadow-[0_0_24px_rgba(34,197,94,0.08)] min-h-0 min-w-0">
                 <div className="absolute top-3 right-3 z-10 bg-black/80 px-3 py-2 rounded-lg border border-green-500/30 backdrop-blur-xl text-right">
                   <h2 className="font-black text-green-400 tracking-wide uppercase text-xs">Knapsack Optimal</h2>
                   <p className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-widest">Greedy Betweenness ROI</p>
