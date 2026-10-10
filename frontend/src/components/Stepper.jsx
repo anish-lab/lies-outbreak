@@ -41,7 +41,7 @@ const Stepper = ({ currentStep }) => {
               </div>
               {/* Label — only show on active/completed to save space */}
               <span
-                className={`text-[9px] font-bold uppercase tracking-[0.15em] whitespace-nowrap transition-colors duration-500 hidden sm:block
+                className={`text-[9px] font-bold uppercase tracking-[0.15em] whitespace-nowrap transition-colors duration-500 hidden sm:block bg-[#050505] px-1.5 py-0.5 rounded-full
                   ${isActive ? 'text-blue-400' : isCompleted ? 'text-white/60' : 'text-gray-700'}`}
               >
                 {step.name}

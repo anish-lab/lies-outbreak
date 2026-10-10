@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
-const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode = false }) => {
+const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode = false, isSplitView = false }) => {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const graphRef = useRef();
@@ -201,27 +201,29 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
         backgroundColor="#050505"
         d3VelocityDecay={staticMode ? 1 : 0.3} // Static mode freezes physics immediately
         cooldownTicks={staticMode ? 0 : Infinity} // Stop engine if static
-        enableNodeDrag={!staticMode}
+        enableNodeDrag={!staticMode && !isSplitView}
         enableZoomInteraction={!staticMode}
         enablePanInteraction={!staticMode}
       />
 
       
       {/* Premium Cyber Legend */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_#3b82f6]"></div>
-          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Safe</span>
+      {!isSplitView && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_#3b82f6]"></div>
+            <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Safe</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_15px_#ef4444]"></div>
+            <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Infected</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e] border border-green-400"></div>
+            <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Intervened</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_15px_#ef4444]"></div>
-          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Infected</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e] border border-green-400"></div>
-          <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Intervened</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
