@@ -205,7 +205,6 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
         enableZoomInteraction={!staticMode}
         enablePanInteraction={!staticMode}
       />
-
       
       {/* Premium Cyber Legend */}
       {!isSplitView && (
