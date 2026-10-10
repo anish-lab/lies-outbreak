@@ -390,7 +390,7 @@ export default function BenchmarkPanel({
             </div>
             {sweepData?.flattening_budget && (
               <span className="text-[10px] font-mono bg-green-500/10 text-green-400 border border-green-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1">
-                <Sparkles, ArrowLeft size={12} /> Flattens at k = {sweepData.flattening_budget}
+                <Sparkles size={12} /> Flattens at k = {sweepData.flattening_budget}
               </span>
             )}
           </div>
