@@ -8,7 +8,7 @@ import TimelineControls from './components/TimelineControls';
 import EventLog from './components/EventLog';
 import BenchmarkPanel from './components/BenchmarkPanel';
 import { fetchNetwork, runSimulation } from './services/api';
-import { Loader2, ArrowRight, ShieldCheck, Info, AlertTriangle, X, BarChart3, Activity, Play } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, ShieldCheck, Info, AlertTriangle, X, BarChart3, Activity, Play } from 'lucide-react';
 
 function App() {
   const [step, setStep] = useState(1);
@@ -289,6 +289,7 @@ function App() {
             budget={budget}
             dataset="snap"
             onError={setErrorMsg}
+              onBack={() => { setActiveTab('sim'); setStep(2); }}
           />
         )}
 
@@ -423,7 +424,7 @@ function App() {
             {/* Back button row */}
             <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40">
               <button
-                onClick={() => setStep(4)}
+                onClick={() => { setActiveTab('sim'); setStep(2); }}
                 className="bg-black/80 hover:bg-white hover:text-black border border-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-bold transition-all shadow-[0_0_16px_rgba(0,0,0,0.5)] tracking-widest uppercase"
               >
                 ← Return to 3D Explorer

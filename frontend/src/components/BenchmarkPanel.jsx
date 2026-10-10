@@ -11,7 +11,7 @@ import {
   Info,
   CheckCircle2,
   Sliders,
-  Sparkles
+  Sparkles, ArrowLeft
 } from 'lucide-react';
 import { runBenchmark, runSweep } from '../services/api';
 
@@ -63,6 +63,7 @@ export default function BenchmarkPanel({
   budget,
   dataset = 'snap',
   onError,
+  onBack,
 }) {
   const [benchmarkData, setBenchmarkData] = useState(null);
   const [sweepData, setSweepData] = useState(null);
@@ -141,7 +142,12 @@ export default function BenchmarkPanel({
     : 100;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full relative">
+      {onBack && (
+        <button onClick={onBack} className="absolute top-8 right-8 bg-black/80 hover:bg-white hover:text-black border border-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-bold transition-all shadow-[0_0_16px_rgba(0,0,0,0.5)] tracking-widest uppercase flex items-center gap-2 z-50">
+          <ArrowLeft size={14} /> Go Back to Configuration
+        </button>
+      )}
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-purple-950/40 border border-blue-500/20 rounded-2xl p-6 shadow-[0_0_40px_rgba(30,58,138,0.2)] backdrop-blur-xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
@@ -384,7 +390,7 @@ export default function BenchmarkPanel({
             </div>
             {sweepData?.flattening_budget && (
               <span className="text-[10px] font-mono bg-green-500/10 text-green-400 border border-green-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1">
-                <Sparkles size={12} /> Flattens at k = {sweepData.flattening_budget}
+                <Sparkles, ArrowLeft size={12} /> Flattens at k = {sweepData.flattening_budget}
               </span>
             )}
           </div>
