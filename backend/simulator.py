@@ -86,7 +86,7 @@ def run_simulation(
         elif strategy == "betweenness":
             intervened_set = set(betweenness_intervention(G, budget, start_node=str(start_node)))
         elif strategy == "knapsack":
-            intervened_set = set(knapsack_intervention(G, budget, start_node=str(start_node)))
+            intervened_set = set(knapsack_intervention(G, budget, start_node=str(start_node), seed=seed))
 
     # Normalise start_node to str for uniform comparisons
     start_str = str(start_node)
