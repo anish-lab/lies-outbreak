@@ -3,7 +3,7 @@ import ForceGraph2D from 'react-force-graph-2d';
 
 const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode = false, isSplitView = false }) => {
   const containerRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [dimensions, setDimensions] = useState({ width: 10, height: 10 });
   const graphRef = useRef();
 
   // Pre-calculate neighbor map for fast lookup
@@ -25,18 +25,29 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight
-        });
+        const { clientWidth, clientHeight } = containerRef.current;
+        if (clientWidth > 0 && clientHeight > 0) {
+          setDimensions({
+            width: clientWidth,
+            height: clientHeight
+          });
+        }
       }
     };
     
     updateDimensions();
-    setTimeout(updateDimensions, 100);
+    const ro = new ResizeObserver(() => {
+      updateDimensions();
+    });
+    if (containerRef.current) {
+      ro.observe(containerRef.current);
+    }
     window.addEventListener('resize', updateDimensions);
     
-    return () => window.removeEventListener('resize', updateDimensions);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateDimensions);
+    };
   }, []);
 
   const hasOutbreak = useMemo(() => Object.values(colors).includes('#ef4444'), [colors]);
@@ -206,9 +217,9 @@ const GraphCanvas = ({ network, colors, onNodeClick, selectedNodeId, staticMode 
         enablePanInteraction={!staticMode && !isSplitView}
       />
       
-      {/* Premium Cyber Legend */}
-      {!isSplitView && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10">
+      {/* Premium Cyber Legend - only show when not in staticMode or isSplitView */}
+      {!staticMode && !isSplitView && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-700/50 rounded-xl px-8 py-3 flex gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl z-10 pointer-events-none">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_#3b82f6]"></div>
             <span className="text-xs font-mono font-bold text-gray-300 uppercase tracking-widest">Safe</span>
